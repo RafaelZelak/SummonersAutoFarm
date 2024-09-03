@@ -1,9 +1,9 @@
-from src.utils.capture import capture_screen
-from src.utils.search import search_word_on_screen
-from src.actions.click import simulate_click
 import tkinter as tk
 from PIL import ImageTk, Image
 import threading
+from src.utils.capture import capture_screen
+from src.utils.search import search_word_on_screen
+from src.actions.click import simulate_click
 
 # Armazenar a referência à imagem globalmente
 tk_image = None
@@ -19,8 +19,12 @@ def update_canvas_image(canvas, screen_display_width, screen_display_height):
     # Atualiza o canvas com a nova imagem
     canvas.create_image(0, 0, anchor=tk.NW, image=tk_image)
 
-def search_and_update_ui(root, canvas, status_label, screen_display_width, screen_display_height, screen_width, screen_height, palavra, searching_replay):
+def search_and_update_ui(root, canvas, status_label, screen_display_width, screen_display_height, screen_width, screen_height, palavra, searching_replay, stop_searching_callback):
     while True:
+        # Verifica se a leitura deve continuar
+        if stop_searching_callback():  # Se a função callback retornar True, paramos o loop
+            return  # Para o loop completamente, sem resetar
+
         # Atualiza a imagem no canvas
         update_canvas_image(canvas, screen_display_width, screen_display_height)
 
@@ -45,10 +49,11 @@ def search_and_update_ui(root, canvas, status_label, screen_display_width, scree
             status_label.config(text=f'Procurando "{palavra_atual}"...', fg="red")
 
         # Aguarda 100 ms antes de atualizar novamente
-        root.after(1)
+        root.after(100)
 
-def update_ui(root, canvas, status_label, screen_display_width, screen_display_height, screen_width, screen_height, palavra, searching_replay):
-    # Inicia um thread separado para atualizar a UI
-    update_thread = threading.Thread(target=search_and_update_ui, args=(root, canvas, status_label, screen_display_width, screen_display_height, screen_width, screen_height, palavra, searching_replay))
-    update_thread.daemon = True
-    update_thread.start()
+def update_ui(root, canvas, status_label, screen_display_width, screen_display_height, screen_width, screen_height, palavra, searching_replay, stop_searching_callback):
+    # Inicia um thread separado para atualizar a UI, apenas se a leitura estiver ativa
+    if not stop_searching_callback():
+        update_thread = threading.Thread(target=search_and_update_ui, args=(root, canvas, status_label, screen_display_width, screen_display_height, screen_width, screen_height, palavra, searching_replay, stop_searching_callback))
+        update_thread.daemon = True
+        update_thread.start()
