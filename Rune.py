@@ -8,10 +8,13 @@ import time
 import hashlib
 import json
 from Found import Found
-from FoundClickRobot import FoundClick
+from FoundClick import FoundClick
 from FoundOneTime import FoundOneTime
 from FoundClickOneTime import FoundClickOneTime
 from CalcRune import calcular_eficiencia_da_runa
+from pyclick import HumanClicker
+from screenshotRuneUp import screenshotRuneUp
+from CalcRuneUp import calcular_eficiencia_da_runa_up
 
 def find_image_on_screen(target_image, confidence=0.7):
     """
@@ -52,6 +55,8 @@ def count_and_print_coordinates(image_to_find, search_region, confidence=0.7, mi
     clicked_coordinates = []  # Lista para armazenar as coordenadas clicadas
     star_count = 0  # Contador de ocorrências
 
+    hc = HumanClicker()
+
     for point in points:
         # Certifique-se de que o template foi carregado corretamente
         if template is None:
@@ -74,71 +79,96 @@ def count_and_print_coordinates(image_to_find, search_region, confidence=0.7, mi
 
         # Se a coordenada for suficientemente distante, clica nela
         if should_click:
-            pyautogui.click(x, y)  # Clica na posição centralizada
+            # Move o cursor de forma suave até a posição (x, y)
+            hc.move((x, y), duration=1.0)  # A duração pode ser ajustada conforme necessário
+            hc.click()  # Realiza o clique após a movimentação
             print(f"Runa encontrada em COORD: ({x}, {y})\n")
             clicked_coordinates.append((x, y))
-            time.sleep(0.3)
+            time.sleep(0.6)
 
             # Verifica se a runa é rara e executa ações específicas
             RunaJaVendida = FoundOneTime("./img/button/RecompraBtn.png", threshold=0.8)
+            RunaJaVendidaLegend = FoundOneTime("./img/button/RecompraLegendBtn.png", threshold=0.8)
+
             if RunaJaVendida == False:
-                RuneRare = FoundOneTime("./img/runes/Rare.png", threshold=0.8)
-                if RuneRare:
-                    print("A runa é Rara, Vendendo")
-                    Vender = FoundOneTime("./img/button/VenderPriceBtn.png", threshold=0.8)
-                    if Vender:
-                        FoundClick("./img/button/VenderPriceBtn.png", threshold=0.8)
-                    else:
-                        FoundClick("./img/button/OkBtn.png", threshold=0.8)
-
-                    star_count += 1
-                    input("Pressione Enter para continuar...")
-                    continue
-
-                # Captura uma print da área acima do botão "Vender"
-                vender_pos = pyautogui.locateOnScreen("./img/button/VenderPriceBtn.png", confidence=0.8)
-                if vender_pos:
-                    vx, vy, vw, vh = map(int, vender_pos)  # Garante que os valores sejam inteiros
-                    top_region = (
-                        max(0, vx - int(vw * 0.5)) + 11,  # Reduz o deslocamento para incluir mais pixels à esquerda
-                        max(0, vy - int(vh * 4.5)),       # Mantém o ajuste vertical
-                        int(vw * 1.5),                    # Aumenta a largura para capturar mais pixels à direita
-                        vh * 3                            # Mantém a altura como está
-                    )
-
-                    # Gera o hash para o nome do arquivo
-                    hash_name = hashlib.md5(str(time.time()).encode()).hexdigest()
-
-                    # Caminho da pasta cache
-                    cache_dir = "./cache"
-                    os.makedirs(cache_dir, exist_ok=True)  # Cria a pasta se não existir
-
-                    screenshot_top = pyautogui.screenshot(region=top_region)
-                    screenshot_top_path = os.path.join(cache_dir, f"screenshot_{hash_name}.png")
-                    screenshot_top.save(screenshot_top_path)
-
-                    print(f"Captura da área acima do botão 'Vender' salva em: {screenshot_top_path}")
-
-                    eficiencia = calcular_eficiencia_da_runa()
-                    eficienciaPercent = eficiencia['eficiencia']
-                    print(f"\nRetorno Calc:\n{eficiencia}")
-                    if eficienciaPercent >= 50.0:
-                        FoundClick("./img/button/MelhoriaBtn.png",threshold=0.8)
-                        FoundClick("./img/button/MelhoriaUpBtn.png",threshold=0.8)
-                    else:
-                        VenderVerificada = FoundOneTime("./img/button/VenderPriceBtn.png", threshold=0.8)
-                        if VenderVerificada:
-                            FoundClickOneTime("./img/button/VenderPriceBtn.png", threshold=0.8)
-                            RunaLegend = FoundOneTime("./img/button/SimBtn.png", threshold=0.8)
-                            if RunaLegend:
-                                FoundClick("./img/button/SimBtn.png", threshold=0.8)
+                if RunaJaVendidaLegend == False:
+                    RuneRare = FoundOneTime("./img/runes/Rare.png", threshold=0.8)
+                    if RuneRare:
+                        print("A runa é Rara, Vendendo")
+                        Vender = FoundOneTime("./img/button/VenderPriceBtn.png", threshold=0.7)
+                        if Vender:
+                            FoundClick("./img/button/VenderPriceBtn.png", threshold=0.8)
                         else:
                             FoundClick("./img/button/OkBtn.png", threshold=0.8)
+
+                        star_count += 1
+                        time.sleep(2)
+                        continue
+
+                    # Captura uma print da área acima do botão "Vender"
+                    vender_pos = pyautogui.locateOnScreen("./img/button/VenderPriceBtn.png", confidence=0.8)
+                    
+                    if vender_pos:
+                        vx, vy, vw, vh = map(int, vender_pos)  # Garante que os valores sejam inteiros
+                        top_region = (
+                            max(0, vx - int(vw * 0.5)) + 11,  # Reduz o deslocamento para incluir mais pixels à esquerda
+                            max(0, vy - int(vh * 4.5)),       # Mantém o ajuste vertical
+                            int(vw * 1.5),                    # Aumenta a largura para capturar mais pixels à direita
+                            vh * 3                            # Mantém a altura como está
+                        )
+
+                        # Gera o hash para o nome do arquivo
+                        hash_name = hashlib.md5(str(time.time()).encode()).hexdigest()
+
+                        # Caminho da pasta cache
+                        cache_dir = "./cache"
+                        os.makedirs(cache_dir, exist_ok=True)  # Cria a pasta se não existir
+
+                        screenshot_top = pyautogui.screenshot(region=top_region)
+                        screenshot_top_path = os.path.join(cache_dir, f"screenshot_{hash_name}.png")
+                        screenshot_top.save(screenshot_top_path)
+
+                        print(f"Captura da área acima do botão 'Vender' salva em: {screenshot_top_path}")
+
+                        eficiencia = calcular_eficiencia_da_runa()
+                        eficienciaPercent = eficiencia['eficiencia']
+                        print(f"\nRetorno Calc:\n{eficiencia}")
+                        if eficienciaPercent >= 50.0:
+                            FoundClick("./img/button/MelhoriaBtn.png",threshold=0.8)
+                            FoundClick("./img/button/MelhoriaUpBtn.png",threshold=0.8)
+                            time.sleep(5)
+                            screenshotRuneUp("./img/runes/Rune12.png")
+                            time.sleep(2)
+                            eficienciaRunaUp = calcular_eficiencia_da_runa_up()
+                            print(f"\nRetorno Calc:\n{eficienciaRunaUp}")
+                            eficienciaRunaUpPercent = eficienciaRunaUp['eficiencia']
+
+                            if eficienciaRunaUpPercent >= 80.0:
+                                FoundClick("./img/button/OkBtn.png", threshold=.8)
+                            else:
+                                FoundClick("./img/button/VenderPriceBtnUp.png", threshold=.8)
+                                time.sleep(1)
+                                runaMaisDoze = FoundOneTime("./img/button/VenderRunaUpBtn.png",  threshold=.8)
+                                if runaMaisDoze == True:
+                                    FoundClick("./img/button/SimBtn.png", threshold=.8)
+                            FoundClick("./img/button/FecharBtn.png", threshold=.8)
+
+                        else:
+                            VenderVerificada = FoundOneTime("./img/button/VenderPriceBtn.png", threshold=0.8)
+                            if VenderVerificada:
+                                FoundClickOneTime("./img/button/VenderPriceBtn.png", threshold=0.8)
+                                RunaLegend = FoundOneTime("./img/button/SimBtn.png", threshold=0.8)
+                                if RunaLegend:
+                                    FoundClick("./img/button/SimBtn.png", threshold=0.8)
+                            else:
+                                FoundClick("./img/button/OkBtn.png", threshold=0.8)
+                else:
+                    FoundClick("./img/button/XBtn.png", threshold=0.8)
             else:
                 FoundClick("./img/button/XBtn.png", threshold=0.8)
 
             star_count += 1
-            input("Pressione Enter para continuar...")
+            time.sleep(2)
 
     return star_count
 

@@ -2,17 +2,26 @@ import os
 import json
 from PIL import Image
 import pytesseract
+import re
+import shutil
 
 # Função para extrair texto da imagem
 def extract_text_from_image(image_path):
     try:
         img = Image.open(image_path)
-        text = pytesseract.image_to_string(img)  # Removido lang='por'
-        return text
+        text = pytesseract.image_to_string(img)
+        
+        # Remover conteúdo do "(" em diante (inclusive parêntese) e linhas em branco
+        cleaned_text = "\n".join(
+            re.sub(r"\(.*", "", line).strip()
+            for line in text.splitlines()
+            if line.strip()
+        )
+        
+        return cleaned_text
     except Exception as e:
         return f"Erro ao processar a imagem: {e}"
 
-# Função para processar o texto extraído e criar o dicionário de subatributos
 def processar_subatributos(texto_extraido):
     subatributos = {}
     linhas = texto_extraido.split('\n')
@@ -78,7 +87,7 @@ def calcular_eficiencia_runa(subatributos):
     }
 
     # Soma das eficiências ponderadas dos subatributos
-    soma_eficiencia = 0
+    soma_eficiencia = 12
     for subatributo, valor in subatributos.items():
         if subatributo in valores_maximos:
             valor_maximo = valores_maximos[subatributo]
@@ -92,7 +101,7 @@ def calcular_eficiencia_runa(subatributos):
     return eficiencia_total
 
 # Função principal que integra os passos e retorna o resultado formatado como JSON
-def calcular_eficiencia_da_runa():
+def calcular_eficiencia_da_runa_up():
     # Caminho da imagem
     image_path = './cache'
 
@@ -122,4 +131,3 @@ def calcular_eficiencia_da_runa():
 
     # Retornar o resultado como JSON
     return resultado
-
