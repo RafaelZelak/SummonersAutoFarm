@@ -133,7 +133,7 @@ def count_and_print_coordinates(image_to_find, search_region, confidence=0.7, mi
                         eficiencia = calcular_eficiencia_da_runa()
                         eficienciaPercent = eficiencia['eficiencia']
                         print(f"\nRetorno Calc:\n{eficiencia}")
-                        if eficienciaPercent >= 50.0:
+                        if eficienciaPercent >= 75.0:
                             FoundClick("./img/button/MelhoriaBtn.png",threshold=0.8)
                             FoundClick("./img/button/MelhoriaUpBtn.png",threshold=0.8)
                             time.sleep(5)
@@ -143,8 +143,8 @@ def count_and_print_coordinates(image_to_find, search_region, confidence=0.7, mi
                             print(f"\nRetorno Calc:\n{eficienciaRunaUp}")
                             eficienciaRunaUpPercent = eficienciaRunaUp['eficiencia']
 
-                            if eficienciaRunaUpPercent >= 80.0:
-                                FoundClick("./img/button/OkBtn.png", threshold=.8)
+                            if eficienciaRunaUpPercent >= 65.0:
+                                FoundClick("./img/button/OkUpBtn.png", threshold=.8)
                             else:
                                 FoundClick("./img/button/VenderPriceBtnUp.png", threshold=.8)
                                 time.sleep(1)
@@ -152,6 +152,7 @@ def count_and_print_coordinates(image_to_find, search_region, confidence=0.7, mi
                                 if runaMaisDoze == True:
                                     FoundClick("./img/button/SimBtn.png", threshold=.8)
                             FoundClick("./img/button/FecharBtn.png", threshold=.8)
+                            FoundClickOneTime("./img/button/XBtn.png", threshold=.7)
 
                         else:
                             VenderVerificada = FoundOneTime("./img/button/VenderPriceBtn.png", threshold=0.8)

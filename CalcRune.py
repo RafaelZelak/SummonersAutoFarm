@@ -20,7 +20,8 @@ def processar_subatributos(texto_extraido):
     # Dicionário de correções para erros comuns de OCR
     correcoes_ocr = {
         "Precisdo": "Precisao",
-        # Adicione outras correções conforme necessário
+        "SPD": "VEL",  # Corrigindo "SPD" para "VEL"
+        # Adicione mais correções, se necessário
     }
 
     for linha in linhas:
@@ -32,49 +33,53 @@ def processar_subatributos(texto_extraido):
             valor = partes[1].strip()
 
             # Corrigir erros de OCR no atributo
-            atributo = correcoes_ocr.get(atributo, atributo)
+            atributo_corrigido = correcoes_ocr.get(atributo, atributo)
 
             # Verificar se o valor é percentual ou absoluto
             if '%' in valor:
-                chave = f'{atributo}%'  # Percentual
+                chave = f'{atributo_corrigido}%'  # Percentual
                 valor = int(valor.replace('%', '').strip())
             else:
-                chave = f'{atributo}+'  # Valor absoluto
+                chave = atributo_corrigido  # Sem o '+', pois é um valor absoluto
                 valor = int(valor)
 
+            # Exibir valores para depuração
+            print(f"Atributo corrigido: {atributo_corrigido}, Valor: {valor}, Chave: {chave}")
+
+            # Adicionar ao dicionário de subatributos
             subatributos[chave] = valor
     return subatributos
 
 # Função para calcular eficiência da runa
 def calcular_eficiencia_runa(subatributos):
-    # Valores máximos dos subatributos para runas de 6 estrelas
+    # Valores máximos dos subatributos para runas de 6 estrelas no nível +0
     valores_maximos = {
-        'HP+': 1875,
-        'HP%': 40,
-        'ATQ+': 100,
-        'ATQ%': 40,
-        'DEF+': 100,
-        'DEF%': 40,
-        'VEL': 30,
-        'Taxa Crit.%': 30,
-        'Dano Crit.%': 35,
-        'RES%': 40,
-        'Precisao%': 40
+        'HP+': 375,
+        'HP%': 8,
+        'ATQ+': 20,
+        'ATQ%': 8,
+        'DEF+': 20,
+        'DEF%': 8,
+        'VEL': 6,
+        'Taxa Crit.%': 6,
+        'Dano Crit.%': 7,
+        'RES%': 8,
+        'Precisao%': 8
     }
 
     # Pesos dos subatributos
     pesos = {
-        'VEL': 1.4,         # Leve aumento de peso
-        'HP%': 1.2,        # Pequeno impacto
+        'VEL': 1.3,
         'Taxa Crit.%': 1.2,
-        'ATQ%': 1.2,
-        'DEF%': 1.0,        # Neutro
-        'Precisao%': 1.0,
         'Dano Crit.%': 1.0,
-        'RES%': 1.0,
-        'HP+': 0.8,        # Reduzido
-        'ATQ+': 0.8,
-        'DEF+': 0.8
+        'HP%': 1.2,
+        'ATQ%': 1.0,
+        'DEF%': 1.0,
+        'Precisao%': 0.7,
+        'RES%': 0.8,
+        'HP+': 0.5,
+        'ATQ+': 0.5,
+        'DEF+': 0.5
     }
 
     # Soma das eficiências ponderadas dos subatributos
@@ -83,11 +88,18 @@ def calcular_eficiencia_runa(subatributos):
         if subatributo in valores_maximos:
             valor_maximo = valores_maximos[subatributo]
             peso = pesos.get(subatributo, 1.0)  # Peso padrão é 1.0 caso não esteja definido
-            eficiencia_sub = (valor / valor_maximo) * 100 * peso
+            # Calcular a eficiência ponderada, ajustando o valor com o peso e normalizando
+            eficiencia_sub = (valor * peso) / valor_maximo * 100
             soma_eficiencia += eficiencia_sub
 
-    # Eficiência total
-    eficiencia_total = (1 + (soma_eficiencia / 100)) / 2.8 * 100
+    # Número de subatributos presentes na runa
+    num_subatributos = len(subatributos)
+
+    # Normalizar a eficiência total para não ultrapassar 100%
+    eficiencia_total = soma_eficiencia / (num_subatributos * 100) * 100
+
+    # Garantir que a eficiência total não ultrapasse 100%
+    eficiencia_total = min(eficiencia_total, 100)
 
     return eficiencia_total
 
@@ -105,12 +117,15 @@ def calcular_eficiencia_da_runa():
 
     # Etapas do processo
     texto_extraido = extract_text_from_image(image_path)
+    
+    # Imprimir o texto extraído para diagnóstico
+    print("Texto extraído da imagem:", texto_extraido)
+
     subatributos = processar_subatributos(texto_extraido)
 
     # Calcular eficiência da runa
     eficiencia = calcular_eficiencia_runa(subatributos)
 
-    # Remover a imagem após processamento
     os.remove(image_path)
 
     # Criar o dicionário com os dados
@@ -122,4 +137,3 @@ def calcular_eficiencia_da_runa():
 
     # Retornar o resultado como JSON
     return resultado
-

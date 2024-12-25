@@ -4,6 +4,8 @@ from PIL import Image
 import pytesseract
 import re
 import shutil
+import math
+
 
 # Função para extrair texto da imagem
 def extract_text_from_image(image_path):
@@ -55,6 +57,8 @@ def processar_subatributos(texto_extraido):
     return subatributos
 
 # Função para calcular eficiência da runa
+import math
+
 def calcular_eficiencia_runa(subatributos):
     # Valores máximos dos subatributos para runas de 6 estrelas
     valores_maximos = {
@@ -73,30 +77,46 @@ def calcular_eficiencia_runa(subatributos):
 
     # Pesos dos subatributos
     pesos = {
-        'VEL': 1.4,         # Leve aumento de peso
-        'HP%': 1.2,        # Pequeno impacto
-        'Taxa Crit.%': 1.2,
-        'ATQ%': 1.2,
-        'DEF%': 1.0,        # Neutro
-        'Precisao%': 1.0,
-        'Dano Crit.%': 1.0,
-        'RES%': 1.0,
-        'HP+': 0.8,        # Reduzido
-        'ATQ+': 0.8,
-        'DEF+': 0.8
+        'VEL': 1.45,
+        'Taxa Crit.%': 1.3,
+        'Dano Crit.%': 1.2,
+        'HP%': 1.1,
+        'ATQ%': 1.1,
+        'DEF%': 1.1,
+        'Precisao%': 1,
+        'RES%': 1.2,
+        'HP+': 0.5,
+        'ATQ+': 0.5,
+        'DEF+': 0.5
     }
 
+    # Função sigmoide para ajustar a eficiência
+    def curva_eficiencia(valor, valor_maximo, peso):
+        # O ponto de inflexão depende do peso
+        ponto_inflexao = valor_maximo * 0.61 * (2 - peso)  # Ajuste do ponto de inflexão baseado no peso
+        
+        # Se o valor for maior ou igual ao ponto de inflexão, a eficiência vai crescendo mais rápido
+        if valor >= ponto_inflexao:
+            eficiencia = 1 - math.exp(-(valor - ponto_inflexao) / 10)  # Curva mais moderada após o ponto de inflexão
+        else:
+            eficiencia = (valor / valor_maximo) ** 2  # Curva mais suave para valores menores
+
+        # Ajustar pela curva com o peso
+        eficiencia_ponderada = eficiencia * peso * 100
+        return eficiencia_ponderada
+
     # Soma das eficiências ponderadas dos subatributos
-    soma_eficiencia = 12
+    soma_eficiencia = 0
     for subatributo, valor in subatributos.items():
+        print(subatributo, valor)
         if subatributo in valores_maximos:
             valor_maximo = valores_maximos[subatributo]
             peso = pesos.get(subatributo, 1.0)  # Peso padrão é 1.0 caso não esteja definido
-            eficiencia_sub = (valor / valor_maximo) * 100 * peso
+            eficiencia_sub = curva_eficiencia(valor, valor_maximo, peso)  # Calcular eficiência ponderada
             soma_eficiencia += eficiencia_sub
 
-    # Eficiência total
-    eficiencia_total = (1 + (soma_eficiencia / 100)) / 2.8 * 100
+    # Limitar a eficiência total para no máximo 100%
+    eficiencia_total = min(soma_eficiencia, 100)
 
     return eficiencia_total
 
